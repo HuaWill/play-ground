@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<head>
+  <title>基金股票</title>
+  <style>
+    #stock-table {
+      padding: 10px 20px;
+    }
+    #stock-table div span:first-child {
+      display: inline-block;
+      width: 100px;
+    }
+  </style>
+  <script src='../utils.js'></script>
+</head>
+<body>
+  <button onclick="openMarket()">开盘</button>
+  <button onclick="closeMarket()">收盘</button>
+  <div id="stock-table"></div>
+  <script>
+    let ws;
+    function openMarket() {
+      ws = new WebSocket("ws://localhost:10086");
+      ws.onopen = function(evt) {
+        console.log('connected to server !!!');
+      }
+      ws.onclose = function(evt) {
+        console.log('Disconnected ...');
+      }
+      ws.onerror = function(evt) {
+        console.error('Error !!!');
+      }
+      ws.onmessage = function(evt) {
+        let stocks = JSON.parse(evt.data);
+        let contentElement = document.getElementById('stock-table');
+        let stockElement;
+
+        // empty content first
+        while (contentElement.firstChild) {
+          contentElement.removeChild(contentElement.firstChild);
+        }
+
+        Object.entries(stocks).forEach(stock => {
+          stockElement = createElement('div', {}, [
+            createElement('span', {}, stock[0]),
+            createElement('span', {}, stock[1])
+          ]);
+          contentElement.appendChild(stockElement);
+        });
+      }
+    }
+
+    function closeMarket() {
+      ws && ws.close();
+    }
+
+  </script>
+</body>

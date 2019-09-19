@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<head>
+  <title>聊天室</title>
+  <script src="../utils.js"></script>
+  <style>
+    #chat-room {
+      margin: 30px 0;
+      padding: 0 10px;
+      overflow: hidden;
+    }
+    #chat-room > div {
+      height: 250px;
+      width: 150px;
+      float: left;
+      margin-right: 20px;
+      position: relative;
+      border: 1px solid lightgray;
+    }
+    #chat-room > div #title {
+      height: 20px;
+      line-height: 20px;
+      background-color: skyblue;
+      padding-left: 8px;
+    }
+    #chat-room > div > #close-btn {
+      display: inline-block;
+      position: absolute;
+      top: 0px;
+      right: 0px;
+      height: 20px;
+      line-height: 20px;
+      padding: 0px 5px;
+      cursor: pointer;
+      background-color: lavender;
+    }
+    #chat-room > div > #message-history {
+      height: 180px;
+      max-height: 180px;
+      padding: 8px;
+      overflow-y: auto;
+      background-color: aliceblue;
+    }
+    #chat-room > div > #message-box {
+      display: inline-block;
+      position: absolute;
+      bottom: 5px;
+      left: 5px;
+      width: 90px;
+    }
+    #chat-room > div > button {
+      position: absolute;
+      bottom: 5px;
+      right: 5px;
+    }
+  </style>
+</head>
+<body>
+  <button onclick="addPerson()">添加</button>
+  <div id='chat-room'></div>
+
+  <script>
+    let chatRoom = document.getElementById('chat-room');
+    // 事件代理，监听click
+    chatRoom.addEventListener('click', function(evt) {
+      let target = evt.target;
+      let clientId = target.parentNode.dataset.clientId;
+
+      if (target.id === 'close-btn') {
+        // 关闭当前聊天窗口
+        chatRoom.removeChild(target.parentNode);
+        // 关闭当前socket连接
+        wsContainer[clientId].close();
+        //清除前端instance
+        delete wsContainer[clientId];
+      } else if (target.id === 'send-btn') {
+        // 得到聊天内容
+        let msgBox = target.parentNode.querySelector('#message-box');
+        let msgSent = msgBox.value;
+        msgBox.value = '';
+        // 发送聊天内容
+        wsContainer[clientId].send(msgSent);
+      }
+    });
+
+    // 前端存储的ws实例
+    let wsContainer = {};
+
+    function addPerson() {
+      let chatDom = createElement('div', {}, [
+        createElement('div', {attrs: {id: 'title'}}, ''),
+        createElement('span', {attrs: {id: 'close-btn'}}, 'x'),
+        createElement('div', {attrs: {id: 'message-history'}}, ''),
+        createElement('input', {attrs: {id: 'message-box'}}, '发送'),
+        createElement('button', {attrs: {id: 'send-btn'}}, '发送'),
+      ]);
+
+      chatRoom.appendChild(chatDom);
+
+      let ws = new WebSocket("ws://localhost:10086");
+
+      ws.onmessage = function (evt) {
+        let data = JSON.parse(evt.data);
+        let clientId = data.clientId;
+        let isSelfMsg;
+
+        if (clientId) {
+          chatDom.querySelector('#title').innerHTML = clientId;
+          chatDom.dataset.clientId = clientId;
+          this.clientId = clientId;
+          wsContainer[clientId] = this;
+        } else {
+          let isSelfMsg = (this.clientId === data.client);
+          chatDom.querySelector('#message-history').appendChild(createElement('div', {}, [
+            createElement('div', isSelfMsg ? {attrs: {style: 'text-align: right; color: orangered;'}} : {}, data.msg)
+          ]));
+        }
+      }
+
+      // wsContainer[clientId] = ws;
+    }
+
+  </script>
+</body>
