@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Uploader</title>
+</head>
+<body>
+  <input type="file", id="file-input", accept="image/*">
+  <br>
+  <img src="" alt="" id="server-img">
+
+  <script src="../utils/axios.js"></script>
+
+  <script>
+    const fileInput = document.getElementById('file-input');
+
+    const convertBase64 = (file) => {
+      return new Promise(resolve => {
+        let fileReader = new FileReader();
+        fileReader.readAsDataURL(file);
+        fileReader.onload = evt => {
+          resolve(evt.target.result);
+        }
+      });
+    }
+
+    fileInput.onchange = async () => {
+      const file = fileInput.files[0];
+
+      if (!file) return;
+
+      let base64 = await convertBase64(file);
+      let postData = `chunk=${encodeURIComponent(base64)}&fileName=${encodeURIComponent(file.name)}`;
+
+      // Content-Type: application/x-www-form-urlencoded
+      const {data} = await axios.post('http://127.0.0.1:9999/base64', postData, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      });
+
+      if (data.code === 0 && data.codeText === 'success') {
+        document.getElementById('server-img').src = data.path;
+      }
+    }
+  </script>
+
+</body>
+</html>

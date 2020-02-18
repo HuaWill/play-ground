@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Uploader</title>
+</head>
+<body>
+  <input type="file", id="file-input", accept="*/*">
+  <span id="progress">0%</span>
+  <br>
+  <img src="" alt="" id="server-img">
+
+  <script src="../utils/axios.js"></script>
+
+  <script>
+    const fileInput = document.getElementById('file-input');
+    const progressBar = document.getElementById('progress');
+
+    let _progress = new Proxy({
+      total: 0
+    }, {
+      set(target, key, value) {
+        target[key] = value;
+        if (value >= 100) {
+          progressBar.innerHTML = '上传完成';
+        } else {
+          progressBar.innerHTML = `${value}%`;
+        }
+      }
+    });
+
+    fileInput.onchange = async () => {
+      const file = fileInput.files[0];
+
+      if (!file) return;
+
+      const formData = new FormData();
+      formData.append('chunk', file);
+      formData.append('fileName', encodeURIComponent(file.name))
+
+      // Content-Type: multipart/form-data
+      const {data} = await axios.post('http://127.0.0.1:9999/form-data', formData, {
+        onUploadProgress: progressEvent => {
+          _progress.total = Math.ceil(progressEvent.loaded / progressEvent.total * 100)
+        }
+      });
+
+      if (data.code === 0 && data.codeText === 'success') {
+        document.getElementById('server-img').src = data.path;
+      }
+    }
+  </script>
+
+</body>
+</html>

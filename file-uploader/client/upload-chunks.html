@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>File Uploader</title>
+</head>
+<body>
+  <input type="file", id="file-input", accept="image/*">
+  <br>
+  <img src="" alt="" id="server-img">
+
+  <script src="../utils/axios.js"></script>
+
+  <script>
+    const fileInput = document.getElementById('file-input');
+    const numOfChunk = 5;
+
+    fileInput.onchange = async () => {
+      const file = fileInput.files[0];
+
+      if (!file) return;
+
+      const chunkSize = file.size / 5;
+      const fileName = file.name;
+      const fileExt = fileName.substring(fileName.lastIndexOf('.') + 1);
+
+      let chunkList = [];
+      let chunkStart = 0;
+      let idx = 0;
+
+      while (idx < numOfChunk) {
+        chunkList.push({
+          chunk: file.slice(chunkStart, chunkStart + chunkSize),
+          fileName: `[${idx}]---${new Date().getTime()}.${fileExt}`
+        });
+        chunkStart += chunkSize;
+        idx++;
+      }
+
+      chunkList = chunkList.map(item => {
+        let formData = new FormData();
+        formData.append('chunk', item.chunk);
+        formData.append('fileName', item.fileName);
+        return axios.post('http://127.0.0.1:9999/chunk', formData);
+      });
+
+      await Promise.all(chunkList);
+
+      const {data} = await axios.post('http://127.0.0.1:9999/merge', `fileName=${encodeURIComponent(fileName)}`, {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded'
+        }
+      });
+
+      if (data.code === 0 && data.codeText === 'success') {
+        document.getElementById('server-img').src = data.path;
+      }
+    }
+  </script>
+
+</body>
+</html>
