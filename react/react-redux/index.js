@@ -26,6 +26,7 @@ export const connect = (
     };
 
     render() {
+      console.log('wrapper');
       return <WrappedComponent {...this.state.mergedProps} />;
     }
 
