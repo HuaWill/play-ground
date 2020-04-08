@@ -11,10 +11,10 @@ const loader = (dir) => {
         reject(error);
       } else {
         results = files.map(file => {
-          return [
-            // 第一个元素用于路由，第二个元素是对应的文件
-            file.replace('.js', ''), require(`${filePath}\/${file}`)
-          ]
+          let stats = fs.statSync(`${filePath}/${file}`);
+          return stats.isDirectory() 
+            ? [ file, require(`${filePath}\/${file}/index.js`) ]
+            : [ file.replace('.js', ''), require(`${filePath}\/${file}`) ]
         });
         resolve(results);
       }
